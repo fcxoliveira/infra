@@ -10,15 +10,15 @@ event question_state(void);
 event send_button_state(void);
 event send_time_state(void);
 // array de ponteiros para as funcoes dos estados
-event (* state_functions[])(void) = {int_connect_state, time_pass_state, send_button_state, send_time_state };
+event (* state_functions[])(void) = {int_connect_state, mqqt_state, question_state, send_button_state, send_time_state };
 // definicao dos nomes dos estados
-typedef enum state_ {internet, mqqt, question, send_button, send_time} state;
+typedef enum state_ {internet, mqqt, _question, button, _time} state;
 // estrutura que define as transicoes dos estados
 state state_transitions[NUM_STATES][NUM_EVENTS] = {{internet, mqqt, internet, internet, internet},
-                                                   {mqqt, mqqt, question, mqqt, mqqt}
-                                                   {question, question, question, send_button, send_time}
-                                                   {send_button, send_button, send_button, internet, send_button}
-                                                   {send_time, send_time, send_time, send_time, internet}};
+                                                   {mqqt, mqqt, _question, mqqt, mqqt},
+                                                   {_question, _question, _question, button, _time},
+                                                   {button, button, button, _question, button},
+                                                   {_time, _time, button, _time, _question}};
 // definicao dos estados inicial e final
 #define EXIT_STATE mqqt
 #define ENTRY_STATE internet

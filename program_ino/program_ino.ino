@@ -46,7 +46,7 @@ event mqqt_state(void){
     }
   }
 
-event question_state(void){
+event _question_state(void){
 
   long now = millis();
   if (read_button()){

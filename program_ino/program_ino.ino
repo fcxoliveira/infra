@@ -1,7 +1,7 @@
 #include "fsm_config.h"
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
-#include <DHT.h>;
+#include <DHT.h>
 
 
 #define DHTPIN D3          // what pin we're connected to
@@ -31,7 +31,7 @@ char msg1[60];
 
 // definicao das funcoes relativas a cada estado
 event mqqt_state(void){
- 
+
     if (client.connect("ESP8266Client","A1E-KjZv9M3SE1Zkom6cZM1HS3bcUabMLF","")) {
       Serial.println("connected");
       client.subscribe("inTopic");
@@ -69,10 +69,10 @@ event send_button_state(void) {
 
 
   if (send_data()){
-    return question;
+    return send_button;
   }
   else{
-    return send_button;
+    return question;
   }
 }
 
@@ -81,10 +81,10 @@ event send_time_state(void) {
 
 
   if (send_data()){
-    return question;
+    return send_time;
   }
   else{
-    return send_time;
+    return question;
   }
 }
 
@@ -96,7 +96,7 @@ event int_connect_state(void) {
   Serial.println(ssid);
 
   WiFi.begin(ssid, password);
-
+  delay(5000);
   if (WiFi.status()== WL_CONNECTED) {
     Serial.println("");
     Serial.println("WiFi connected");
@@ -143,7 +143,7 @@ int read_button() {
 
 
 int send_data() {
-  
+
   umidade = dht.readHumidity();
   temperatura = dht.readTemperature();
   snprintf (msg, 60, "{\"value\":%d}", dtostrf(temperatura, 6, 2, NULL));
@@ -161,14 +161,14 @@ int send_data() {
 }
 
 void setup() {
-  
+
   dht.begin();
   pinMode(buttonPin, INPUT);
   pinMode(BUILTIN_LED, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
- 
+
   client.setServer(mqtt_server, 1883);
   Serial.begin(9600);
- 
+
 }
 
 void loop() {

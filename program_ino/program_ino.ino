@@ -4,13 +4,13 @@
 #include <DHT.h>
 
 
-#define DHTPIN D3          // what pin we're connected to
+#define DHTPIN D4          // what pin we're connected to
 #define DHTTYPE DHT22     // DHT 22  (AM2302)
 DHT dht(DHTPIN, DHTTYPE); //// Initialize DHT sensor for normal 16mhz Arduino
 const int buttonPin = D5;    // definicao do pino utilizado pelo botao
 const int ledPin = D7;       // definicao do pino utilizado pelo led
-const char* ssid = "GVT-AEC2"; // id da rede
-const char* password = "1339303008"; // senha da rede
+const char* ssid = "augusto-Aspire-E5-571"; // id da rede
+const char* password = "sLPCwZqX"; // senha da rede
 const char* mqtt_server = "things.ubidots.com"; // server
 
 
@@ -20,12 +20,21 @@ unsigned long lastDebounceTime = 0;  // armazena a ultima vez que a leitura da e
 unsigned long debounceDelay = 50;    // tempo utilizado para implementar o debounce
 float umidade;  //Stores humidity value
 float temperatura; //Stores temperature value
+float button;
+float timePass;
+String hum = "{\"value\":";
+String temp = "{\"value\":";
+String but = "{\"value\":";
+String time1 = "{\"value\":";
+char humChar[50];
+char tempChar[50];
+char butChar[50];
+char timeChar[50];
 
 WiFiClient espClient;
 PubSubClient client(espClient);
-long lastMsg = 0;
-char msg[60];
-char msg1[60];
+int lastMsg = 10000;
+int now;
 
 
 
@@ -35,56 +44,83 @@ event mqqt_state(void){
     if (client.connect("ESP8266Client","A1E-KjZv9M3SE1Zkom6cZM1HS3bcUabMLF","")) {
       Serial.println("connected");
       client.subscribe("inTopic");
-      return question;
+      return next;
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
       Serial.println(" try again in 5 seconds");
       // Wait 5 seconds before retrying
-      delay(5000);
-      return server;
+      return back;
     }
   }
 
 event _question_state(void){
-
-  long now = millis();
-  if (read_button()){
+  //delay(5000);
+ 
+  now = millis();
+  if(now-lastMsg > 10000){
+    Serial.println("Por tempo");
+    lastMsg = now + 10000;
+    return next;
+  }
+  
+  if(read_button()){
+    Serial.println("Por botão");
     digitalWrite(ledPin, HIGH);
-    return send_button;
+    lastMsg = now + 10000;
+    return first;
   }
-
-  else if(now- lastMsg >= 10000){
-    digitalWrite(ledPin, HIGH);
-    lastMsg = now;
-    return send_time;
-  }
-  else{
-    digitalWrite(ledPin, LOW);
-    return question;
-  }
+  Serial.println(now - lastMsg);
+  Serial.println("Resetando o estado");
+  return back;
 }
-
 event send_button_state(void) {
 
 
-  if (send_data()){
-    return send_button;
+  if (client.connected()){
+    if (send_data()){
+      timePass = 0;
+      button = 1;
+      time1.concat(timePass);
+      time1.concat("}");
+      but.concat(button);
+      but.concat("}");
+      time1.toCharArray(timeChar, 50);
+      but.toCharArray(butChar, 50);
+      String time1 = "{\"value\":";
+      String but = "{\"value\":";
+      client.publish("/v1.6/devices/wemos/time", timeChar);
+      client.publish("/v1.6/devices/wemos/button", butChar);   
+      return back; 
+    }
   }
   else{
-    return question;
+    return first;
   }
 }
 
 event send_time_state(void) {
   // Loop until we're reconnected
 
-
-  if (send_data()){
-    return send_time;
+  if (client.connected()){
+    if (send_data()){
+      timePass = 1;
+      button = 0;
+      time1.concat(timePass);
+      time1.concat("}");
+      but.concat(button);
+      but.concat("}");
+      time1.toCharArray(timeChar, 50);
+      but.toCharArray(butChar, 50);
+      String time1 = "{\"value\":";
+      String but = "{\"value\":";
+      client.publish("/v1.6/devices/wemos/time", timeChar);
+      client.publish("/v1.6/devices/wemos/button", butChar);      
+      return back; 
+    }
   }
   else{
-    return question;
+    return first;
   }
 }
 
@@ -102,11 +138,11 @@ event int_connect_state(void) {
     Serial.println("WiFi connected");
     Serial.println("IP address: ");
     Serial.println(WiFi.localIP());
-    return server;
+    return next;
   }
   else{
     Serial.println("Wifi não conectada");
-    return internet_c;
+    return back;
   }
 
 }
@@ -143,29 +179,35 @@ int read_button() {
 
 
 int send_data() {
-
+  dht.begin();
   umidade = dht.readHumidity();
   temperatura = dht.readTemperature();
-  snprintf (msg, 60, "{\"value\":%d}", dtostrf(temperatura, 6, 2, NULL));
-  snprintf (msg1, 60, "{\"value\":%d}", dtostrf(umidade, 6, 2, NULL));
-  client.publish("/v1.6/devices/wemos/umidade", msg1);
-  client.publish("/v1.6/devices/wemos/temp", msg);
+  umidade = 4;
+  temperatura = 26;
   //Print temp and humidity values to serial monitor
   Serial.print("Humidity: ");
   Serial.print(umidade);
   Serial.print(" %, Temp: ");
   Serial.print(temperatura);
   Serial.println(" Celsius");
+  temp.concat(temperatura);
+  temp.concat("}");
+  hum.concat(umidade);
+  hum.concat("}");
+  temp.toCharArray(tempChar, 50);
+  hum.toCharArray(humChar, 50);
+  String hum = "{\"value\":";
+  String temp = "{\"value\":";
+  client.publish("/v1.6/devices/wemos/umidade", humChar);
+  client.publish("/v1.6/devices/wemos/temp", tempChar);
+  
   delay(10000); //Delay 2 sec.
   return true;
 }
 
 void setup() {
-
-  dht.begin();
   pinMode(buttonPin, INPUT);
   pinMode(BUILTIN_LED, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
-
   client.setServer(mqtt_server, 1883);
   Serial.begin(9600);
 
